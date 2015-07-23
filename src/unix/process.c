@@ -536,10 +536,17 @@ int uv_process_kill(uv_process_t* process, int signum) {
 
 
 int uv_kill(int pid, int signum) {
+  int err = 0;
   if (kill(pid, signum))
     return -errno;
-  else
-    return 0;
+  else {
+    /* Make sure the killed process is reaped */
+    int status;
+    do
+      err = waitpid(pid, &status, 0);
+    while (err == -1 && errno == EINTR);
+  }
+  return err;
 }
 
 
